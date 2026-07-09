@@ -94,14 +94,12 @@ function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
       role="switch"
       aria-checked={on}
       onClick={onToggle}
-      className={`relative flex-shrink-0 w-12 h-7 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card ${
-        on ? "bg-primary" : "bg-[var(--switch-background)]"
-      }`}
+      className={`relative flex-shrink-0 w-12 h-7 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card ${on ? "bg-primary" : "bg-[var(--switch-background)]"
+        }`}
     >
       <span
-        className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full shadow-md transition-transform duration-200 ${
-          on ? "translate-x-5 bg-[#003063]" : "translate-x-0 bg-[#aeafc0]"
-        }`}
+        className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full shadow-md transition-transform duration-200 ${on ? "translate-x-5 bg-[#003063]" : "translate-x-0 bg-[#aeafc0]"
+          }`}
       />
     </button>
   );
@@ -129,10 +127,8 @@ function SettingRow({
 
   return (
     <div
-      className={`flex items-center gap-3 px-4 py-3 hover:bg-white/[0.04] active:bg-white/[0.08] transition-colors cursor-pointer select-none ${
-        position === "left" ? "flex-row-reverse" : "flex-row"
-      }`}
-      onClick={onToggle}
+      className={`flex items-center gap-3 px-4 py-3 select-none ${position === "left" ? "flex-row-reverse" : "flex-row"
+        }`}
     >
       {position === "right" && iconEl}
       <div className={`flex-1 min-w-0 ${position === "left" ? "text-right" : "text-left"}`}>
@@ -156,11 +152,11 @@ export default function App() {
         si !== sectionIdx
           ? section
           : {
-              ...section,
-              items: section.items.map((item, ii) =>
-                ii !== itemIdx ? item : { ...item, toggled: !item.toggled }
-              ),
-            }
+            ...section,
+            items: section.items.map((item, ii) =>
+              ii !== itemIdx ? item : { ...item, toggled: !item.toggled }
+            ),
+          }
       )
     );
   };
