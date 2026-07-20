@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Wifi,
   Bluetooth,
@@ -21,6 +21,14 @@ import {
   Zap,
   Sun,
 } from "lucide-react";
+import { getContext, nextUrl, INSTRUCTIONS } from "./tallyFlow";
+import { InstructionsOverlay } from "./InstructionsOverlay";
+
+declare global {
+  interface Window {
+    Tally: any;
+  }
+}
 
 // ── CONFIGURABLE ───────────────────────────────────────────────
 const TOGGLE_POSITION: "left" | "right" = "right";
@@ -145,21 +153,78 @@ function SettingRow({
 
 export default function App() {
   const [sections, setSections] = useState<SettingSection[]>(INITIAL_SECTIONS);
+  const [showInstructions, setShowInstructions] = useState(true);
+  const [hasToggledTop, setHasToggledTop] = useState(false);
+  const [hasToggledBottom, setHasToggledBottom] = useState(false);
+
+  const startTimeRef = useRef<number>(Date.now());
+  const timeToCompleteRef = useRef<number | null>(null);
+
+  // The two specific checkpoints for this task: first item (no scroll needed)
+  // and last item (requires scrolling the full list).
+  const TOP_TARGET_ID = "wifi";
+  const BOTTOM_TARGET_ID = "devmode";
+
+  function handleStart() {
+    startTimeRef.current = Date.now(); // timer starts here, not on page load
+    timeToCompleteRef.current = null;
+    setHasToggledTop(false);
+    setHasToggledBottom(false);
+    setShowInstructions(false);
+  }
+
+  function maybeMarkComplete(nextTop: boolean, nextBottom: boolean) {
+    if (nextTop && nextBottom && timeToCompleteRef.current === null) {
+      timeToCompleteRef.current = Date.now() - startTimeRef.current;
+    }
+  }
 
   const handleToggle = (sectionIdx: number, itemIdx: number) => {
+    const item = sections[sectionIdx].items[itemIdx];
+
+    if (!showInstructions) {
+      const willBeTop = hasToggledTop || item.id === TOP_TARGET_ID;
+      const willBeBottom = hasToggledBottom || item.id === BOTTOM_TARGET_ID;
+      if (item.id === TOP_TARGET_ID && !hasToggledTop) setHasToggledTop(true);
+      if (item.id === BOTTOM_TARGET_ID && !hasToggledBottom) setHasToggledBottom(true);
+      maybeMarkComplete(willBeTop, willBeBottom);
+    }
+
     setSections((prev) =>
       prev.map((section, si) =>
         si !== sectionIdx
           ? section
           : {
             ...section,
-            items: section.items.map((item, ii) =>
-              ii !== itemIdx ? item : { ...item, toggled: !item.toggled }
+            items: section.items.map((it, ii) =>
+              ii !== itemIdx ? it : { ...it, toggled: !it.toggled }
             ),
           }
       )
     );
   };
+
+  function handleRateClick() {
+    const ctx = getContext();
+    // Falls back to time-since-start if they never completed both checkpoints,
+    // so we still capture something rather than sending null.
+    const elapsed = timeToCompleteRef.current ?? (Date.now() - startTimeRef.current);
+
+    window.Tally.openPopup("gD17jO", {
+      layout: "modal",
+      hiddenFields: {
+        pid: ctx.pid,
+        pair: ctx.pair,
+        variant: ctx.isVariant ? "lefthand" : "baseline",
+        step: ctx.step,
+        elapsed_ms: elapsed,
+        grip_type: ctx.grip,
+      },
+      onSubmit: () => {
+        window.location.href = nextUrl(ctx);
+      },
+    });
+  }
 
   return (
     <div
@@ -168,19 +233,15 @@ export default function App() {
     >
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border">
-        <div className="max-w-2xl mx-auto px-4 py-4">
-          <h1 className="text-[22px] font-medium text-foreground">Settings</h1>
-          <p className="text-[13px] text-muted-foreground mt-0.5">
-            Toggles on the{" "}
-            <span className="text-primary font-medium">{TOGGLE_POSITION}</span>
-          </p>
+        <div className="max-w-2xl mx-auto px-4 py-2">
+          <h1 className="text-[17px] font-medium text-foreground">Settings</h1>
         </div>
       </div>
 
       {/* Content */}
-      <div className="max-w-2xl mx-auto pb-16">
+      <div className="max-w-2xl mx-auto pb-32">
         {sections.map((section, si) => (
-          <div key={section.title} className={si > 0 ? "mt-6" : "mt-4"}>
+          <div key={section.title} className={si > 0 ? "mt-6" : "mt-1"}>
             <p className="px-4 mb-1 text-[12px] font-medium tracking-widest uppercase text-primary">
               {section.title}
             </p>
@@ -207,6 +268,30 @@ export default function App() {
           </div>
         ))}
       </div>
+
+      {/* Rate this prototype, fixed to the viewport so it stays visible while scrolling */}
+      <div className="fixed left-1/2 -translate-x-1/2 z-40" style={{ bottom: "calc(24px + env(safe-area-inset-bottom))" }}>
+        <button
+          onClick={handleRateClick}
+          disabled={!(hasToggledTop && hasToggledBottom)}
+          className={`text-sm font-bold px-7 py-3 rounded-full transition-all ${
+            hasToggledTop && hasToggledBottom
+              ? "bg-blue-500 text-white shadow-[0_4px_20px_rgba(59,130,246,0.6)] active:scale-95"
+              : "bg-gray-300 text-gray-400 cursor-not-allowed"
+          }`}
+        >
+          Done testing — Rate this
+        </button>
+      </div>
+
+      {/* Instructions overlay, shown until participant taps Start */}
+      {showInstructions && (
+        <InstructionsOverlay
+          title={INSTRUCTIONS.settings.title}
+          instructions={INSTRUCTIONS.settings.text}
+          onStart={handleStart}
+        />
+      )}
     </div>
   );
 }
