@@ -1,3 +1,4 @@
+import { GRIP_IMAGES } from '../gripImages';
 import { useRef, useState } from "react";
 import {
   Wifi,
@@ -29,7 +30,7 @@ declare global {
     Tally: any;
   }
 }
-
+const ctx = getContext();
 // ── CONFIGURABLE ───────────────────────────────────────────────
 const TOGGLE_POSITION: "left" | "right" = "right";
 // ──────────────────────────────────────────────────────────────
@@ -287,9 +288,10 @@ export default function App() {
       {/* Instructions overlay, shown until participant taps Start */}
       {showInstructions && (
         <InstructionsOverlay
-          title={INSTRUCTIONS.settings.title}
-          instructions={INSTRUCTIONS.settings.text}
+          title={INSTRUCTIONS.control_center.title}
+          instructions={INSTRUCTIONS.control_center.text}
           onStart={handleStart}
+          gripImage={GRIP_IMAGES[ctx.grip]}
         />
       )}
     </div>
