@@ -33,7 +33,7 @@ export const INSTRUCTIONS: Record<string, { title: string; text: string }> = {
   },
   settings: {
     title: "Settings Menu",
-    text: "Try toggling 'Wi-Fi' at the top, then scroll down and toggle 'Developer options' near the bottom. When you're done, tap 'Rate this' below.",
+    text: "Try toggling every setting on this screen at least once. When you're done, tap 'Rate this' below.",
   },
   amazon_nav: {
     title: "App Navigation",

@@ -53,44 +53,44 @@ const INITIAL_SECTIONS: SettingSection[] = [
   {
     title: "Network & Connectivity",
     items: [
-      { id: "wifi", label: "Wi-Fi", description: "AndroidNet_5G", icon: Wifi, iconColor: "#a8c7fa", toggled: true },
-      { id: "bluetooth", label: "Bluetooth", description: "On · 2 devices connected", icon: Bluetooth, iconColor: "#cbb4fd", toggled: true },
-      { id: "mobile", label: "Mobile data", description: "Carrier · LTE", icon: Radio, iconColor: "#80cbc4", toggled: true },
+      { id: "wifi", label: "Wi-Fi", description: "AndroidNet_5G", icon: Wifi, iconColor: "#a8c7fa", toggled: false },
+      { id: "bluetooth", label: "Bluetooth", description: "On · 2 devices connected", icon: Bluetooth, iconColor: "#cbb4fd", toggled: false },
+      { id: "mobile", label: "Mobile data", description: "Carrier · LTE", icon: Radio, iconColor: "#80cbc4", toggled: false },
       { id: "airplane", label: "Airplane mode", icon: Globe, iconColor: "#ef9a9a", toggled: false },
     ],
   },
   {
     title: "Sound & Vibration",
     items: [
-      { id: "sound", label: "Sound", description: "Volume at 70%", icon: Volume2, iconColor: "#80deea", toggled: true },
-      { id: "vibration", label: "Vibration", description: "Always on ring", icon: Vibrate, iconColor: "#a5d6a7", toggled: true },
-      { id: "notifications", label: "Notification sounds", icon: Bell, iconColor: "#ffe082", toggled: true },
+      { id: "sound", label: "Sound", description: "Volume at 70%", icon: Volume2, iconColor: "#80deea", toggled: false },
+      { id: "vibration", label: "Vibration", description: "Always on ring", icon: Vibrate, iconColor: "#a5d6a7", toggled: false },
+      { id: "notifications", label: "Notification sounds", icon: Bell, iconColor: "#ffe082", toggled: false },
     ],
   },
   {
     title: "Display",
     items: [
-      { id: "darkmode", label: "Dark theme", description: "On", icon: Moon, iconColor: "#ce93d8", toggled: true },
+      { id: "darkmode", label: "Dark theme", description: "On", icon: Moon, iconColor: "#ce93d8", toggled: false },
       { id: "brightness", label: "Adaptive brightness", icon: Sun, iconColor: "#ffe082", toggled: false },
-      { id: "nightlight", label: "Night Light", description: "Scheduled · 10 PM – 7 AM", icon: Eye, iconColor: "#ffcc80", toggled: true },
+      { id: "nightlight", label: "Night Light", description: "Scheduled · 10 PM – 7 AM", icon: Eye, iconColor: "#ffcc80", toggled: false },
       { id: "torch", label: "Flashlight", icon: Flashlight, iconColor: "#fff59d", toggled: false },
     ],
   },
   {
     title: "Privacy & Security",
     items: [
-      { id: "fingerprint", label: "Fingerprint unlock", icon: Fingerprint, iconColor: "#ef9a9a", toggled: true },
-      { id: "screenlock", label: "Screen lock", description: "PIN · 30 seconds", icon: Lock, iconColor: "#a8c7fa", toggled: true },
-      { id: "location", label: "Location", description: "Apps-only access", icon: MapPin, iconColor: "#80deea", toggled: true },
-      { id: "shield", label: "Google Play Protect", icon: Shield, iconColor: "#a5d6a7", toggled: true },
+      { id: "fingerprint", label: "Fingerprint unlock", icon: Fingerprint, iconColor: "#ef9a9a", toggled: false },
+      { id: "screenlock", label: "Screen lock", description: "PIN · 30 seconds", icon: Lock, iconColor: "#a8c7fa", toggled: false },
+      { id: "location", label: "Location", description: "Apps-only access", icon: MapPin, iconColor: "#80deea", toggled: false },
+      { id: "shield", label: "Google Play Protect", icon: Shield, iconColor: "#a5d6a7", toggled: false },
     ],
   },
   {
     title: "System",
     items: [
       { id: "battery", label: "Battery saver", description: "Off · 84%", icon: Battery, iconColor: "#a5d6a7", toggled: false },
-      { id: "powersave", label: "Adaptive battery", icon: Zap, iconColor: "#ffe082", toggled: true },
-      { id: "backup", label: "Backup to Google Drive", icon: CloudUpload, iconColor: "#a8c7fa", toggled: true },
+      { id: "powersave", label: "Adaptive battery", icon: Zap, iconColor: "#ffe082", toggled: false },
+      { id: "backup", label: "Backup to Google Drive", icon: CloudUpload, iconColor: "#a8c7fa", toggled: false },
       { id: "accessibility", label: "Accessibility shortcuts", icon: Accessibility, iconColor: "#cbb4fd", toggled: false },
       { id: "devmode", label: "Developer options", icon: Smartphone, iconColor: "#80cbc4", toggled: false },
     ],
@@ -155,40 +155,41 @@ function SettingRow({
 export default function App() {
   const [sections, setSections] = useState<SettingSection[]>(INITIAL_SECTIONS);
   const [showInstructions, setShowInstructions] = useState(true);
-  const [hasToggledTop, setHasToggledTop] = useState(false);
-  const [hasToggledBottom, setHasToggledBottom] = useState(false);
+
+  // Every item id, used to build the initial "not yet tapped" tracker below.
+  const ALL_ITEM_IDS = INITIAL_SECTIONS.flatMap((s) => s.items.map((i) => i.id));
+
+  const initialVisited = (): Record<string, boolean> =>
+    Object.fromEntries(ALL_ITEM_IDS.map((id) => [id, false]));
+
+  // Tracks whether each toggle has EVER been tapped at least once — this is
+  // separate from the toggle's current on/off value, since a participant
+  // flipping something on then back off shouldn't un-complete the task.
+  const [visited, setVisited] = useState<Record<string, boolean>>(initialVisited());
+  const [hasVisitedAll, setHasVisitedAll] = useState(false);
 
   const startTimeRef = useRef<number>(Date.now());
   const timeToCompleteRef = useRef<number | null>(null);
 
-  // The two specific checkpoints for this task: first item (no scroll needed)
-  // and last item (requires scrolling the full list).
-  const TOP_TARGET_ID = "wifi";
-  const BOTTOM_TARGET_ID = "devmode";
-
   function handleStart() {
     startTimeRef.current = Date.now(); // timer starts here, not on page load
     timeToCompleteRef.current = null;
-    setHasToggledTop(false);
-    setHasToggledBottom(false);
+    setVisited(initialVisited());
+    setHasVisitedAll(false);
     setShowInstructions(false);
-  }
-
-  function maybeMarkComplete(nextTop: boolean, nextBottom: boolean) {
-    if (nextTop && nextBottom && timeToCompleteRef.current === null) {
-      timeToCompleteRef.current = Date.now() - startTimeRef.current;
-    }
   }
 
   const handleToggle = (sectionIdx: number, itemIdx: number) => {
     const item = sections[sectionIdx].items[itemIdx];
 
-    if (!showInstructions) {
-      const willBeTop = hasToggledTop || item.id === TOP_TARGET_ID;
-      const willBeBottom = hasToggledBottom || item.id === BOTTOM_TARGET_ID;
-      if (item.id === TOP_TARGET_ID && !hasToggledTop) setHasToggledTop(true);
-      if (item.id === BOTTOM_TARGET_ID && !hasToggledBottom) setHasToggledBottom(true);
-      maybeMarkComplete(willBeTop, willBeBottom);
+    if (!showInstructions && !visited[item.id]) {
+      const updated = { ...visited, [item.id]: true };
+      setVisited(updated);
+      const allVisited = Object.values(updated).every(Boolean);
+      if (allVisited && timeToCompleteRef.current === null) {
+        timeToCompleteRef.current = Date.now() - startTimeRef.current;
+        setHasVisitedAll(true);
+      }
     }
 
     setSections((prev) =>
@@ -204,6 +205,14 @@ export default function App() {
       )
     );
   };
+
+  function handleReopenInstructions() {
+    setSections(INITIAL_SECTIONS);
+    setVisited(initialVisited());
+    setHasVisitedAll(false);
+    timeToCompleteRef.current = null;
+    setShowInstructions(true);
+  }
 
   function handleRateClick() {
     const ctx = getContext();
@@ -271,13 +280,24 @@ export default function App() {
         ))}
       </div>
 
-      {/* Rate this prototype, fixed to the viewport so it stays visible while scrolling */}
-      <div className="fixed left-1/2 -translate-x-1/2 z-40" style={{ bottom: "calc(24px + env(safe-area-inset-bottom))" }}>
+      {/* Info button (reopens instructions) + Rate button, fixed to the viewport */}
+      <div className="fixed left-1/2 -translate-x-1/2 z-40 flex items-center gap-2" style={{ bottom: "calc(24px + env(safe-area-inset-bottom))" }}>
+        <button
+          onClick={handleReopenInstructions}
+          aria-label="Show instructions again"
+          className="w-11 h-11 rounded-full bg-white text-gray-700 flex items-center justify-center shadow-md active:scale-95 transition-transform"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="16" x2="12" y2="12" />
+            <line x1="12" y1="8" x2="12.01" y2="8" />
+          </svg>
+        </button>
         <button
           onClick={handleRateClick}
-          disabled={!(hasToggledTop && hasToggledBottom)}
+          disabled={!hasVisitedAll}
           className={`text-sm font-bold px-7 py-3 rounded-full transition-all ${
-            hasToggledTop && hasToggledBottom
+            hasVisitedAll
               ? "bg-blue-500 text-white shadow-[0_4px_20px_rgba(59,130,246,0.6)] active:scale-95"
               : "bg-gray-300 text-gray-400 cursor-not-allowed"
           }`}
