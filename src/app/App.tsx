@@ -22,7 +22,7 @@ import {
   Zap,
   Sun,
 } from "lucide-react";
-import { getContext, nextUrl, INSTRUCTIONS } from "./tallyFlow";
+import { getContext, nextUrl } from "./tallyFlow";
 import { InstructionsOverlay } from "./InstructionsOverlay";
 
 declare global {
@@ -302,15 +302,14 @@ export default function App() {
               : "bg-gray-300 text-gray-400 cursor-not-allowed"
           }`}
         >
-          Done testing — Rate this
+          Rate Now
         </button>
       </div>
 
       {/* Instructions overlay, shown until participant taps Start */}
       {showInstructions && (
         <InstructionsOverlay
-          title={INSTRUCTIONS.control_center.title}
-          instructions={INSTRUCTIONS.control_center.text}
+          variant={ctx.variant}
           onStart={handleStart}
           gripImage={GRIP_IMAGES[ctx.grip]}
         />
